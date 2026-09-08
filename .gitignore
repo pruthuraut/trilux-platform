@@ -1,0 +1,26 @@
+# Local environment and secrets
+**/.env
+**/.env.*
+!**/sample.env
+
+# Python
+**/__pycache__/
+**/*.py[cod]
+**/.venv/
+**/venv/
+**/env/
+
+# JavaScript
+**/node_modules/
+**/.next/
+**/out/
+**/coverage/
+
+# Local data and generated output
+**/db.sqlite3
+**/logs/
+**/media/
+**/.DS_Store
+
+# Nested repository metadata
+**/.git/

@@ -1,0 +1,205 @@
+# Unified Obsedian Guard / Trilux stack.
+#
+# One command brings up the whole platform:
+#     docker compose up --build
+#
+# Services: postgres, redis, web (Django API), celery_worker, celery_beat,
+#           dashboard (Next.js UI), and a build-only toolbox image for sandboxed scans.
+#
+# URLs once up:
+#   - Dashboard UI : http://localhost:3000
+#   - Backend API  : http://localhost:8000   (admin at /admin/)
+#
+# The dashboard build context points at the sibling repo (../trilux-dashboard).
+# Override with DASHBOARD_CONTEXT if it lives elsewhere.
+
+x-django-env: &django-env
+  DEBUG: ${DEBUG:-False}
+  DATABASE_URL: ${DATABASE_URL:-postgres://trilux:trilux@postgres:5432/trilux}
+  REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+  ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,web}
+  CSRF_AND_CORS_URLS: ${CSRF_AND_CORS_URLS:-http://localhost:3000,http://127.0.0.1:3000}
+  DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-dev-insecure-change-me}
+  # S3 / Cloudflare R2 (optional locally; uploads are skipped if unset)
+  S3_URL: ${S3_URL:-}
+  S3_ACCESS_KEY: ${S3_ACCESS_KEY:-}
+  S3_SECRET_KEY: ${S3_SECRET_KEY:-}
+  S3_ACCOUNT_ID: ${S3_ACCOUNT_ID:-}
+  S3_BUCKET_NAME: ${S3_BUCKET_NAME:-trilux}
+  SCAN_BUCKET: ${SCAN_BUCKET:-scan}
+  GITHUB_REPO_REPORT_BUCKET: ${GITHUB_REPO_REPORT_BUCKET:-report}
+  GITHUB_REPO_SCANS_BUCKET: ${GITHUB_REPO_SCANS_BUCKET:-scans}
+  MOBILE_APP_SCAN_BUCKET: ${MOBILE_APP_SCAN_BUCKET:-report}
+  BROWSER_EXTENSION_SCAN_BUCKET: ${BROWSER_EXTENSION_SCAN_BUCKET:-report}
+  RECON_BUCKET: ${RECON_BUCKET:-recon-results}
+  # LLM / AI
+  LLM_API_URL: ${LLM_API_URL:-}
+  LLM_MODEL_NAME: ${LLM_MODEL_NAME:-}
+  GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+  OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+  OPENROUTER_MODEL: ${OPENROUTER_MODEL:-stepfun/step-3.5-flash:free}
+  # SMTP (dummy defaults so settings import succeeds)
+  SMTP_HOST: ${SMTP_HOST:-localhost}
+  SMTP_PORT: ${SMTP_PORT:-25}
+  SMTP_FROM: ${SMTP_FROM:-dev@example.com}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-changeme}
+  JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret}
+  # Recon AI provider (bedrock | openrouter | anthropic | gemini)
+  RECON_AI_PROVIDER: ${RECON_AI_PROVIDER:-bedrock}
+  BEDROCK_RECON_MODEL: ${BEDROCK_RECON_MODEL:-us.anthropic.claude-opus-4-8}
+  # AWS creds for Bedrock — passed through from host env (no value committed).
+  # For SSO/profile-based creds, prefer mounting ~/.aws (see the volumes note below).
+  AWS_REGION: ${AWS_REGION:-us-west-2}
+  AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+  AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+  AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+  AWS_PROFILE: ${AWS_PROFILE:-}
+  # Recon sandbox execution
+  RECON_EXECUTION_BACKEND: ${RECON_EXECUTION_BACKEND:-docker}
+  RECON_TOOLBOX_IMAGE: ${RECON_TOOLBOX_IMAGE:-trilux-toolbox:latest}
+  RECON_SCAN_NETWORK: ${RECON_SCAN_NETWORK:-trilux_scan_net}
+  RECON_WORK_DIR: /recon-work
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: trilux_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-trilux}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-trilux}
+      POSTGRES_DB: ${POSTGRES_DB:-trilux}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-trilux}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - trilux_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: trilux_redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - trilux_network
+
+  web:
+    build: .
+    container_name: trilux_web
+    command: gunicorn --workers 4 --bind 0.0.0.0:8000 --timeout 120 --access-logfile - --error-logfile - trilux.wsgi:application
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./logs:/app/logs
+      - ./media:/app/media
+      - ./staticfiles:/app/staticfiles
+      # Bedrock with SSO/profile creds: mount the host AWS config read-only so the
+      # container can use the same profile. Harmless if ~/.aws doesn't exist.
+      - ${HOME}/.aws:/root/.aws:ro
+    environment:
+      <<: *django-env
+      RUN_MIGRATIONS: "1"
+      # Optional: auto-create an admin on first boot (leave unset to skip).
+      DJANGO_SUPERUSER_EMAIL: ${DJANGO_SUPERUSER_EMAIL:-}
+      DJANGO_SUPERUSER_PASSWORD: ${DJANGO_SUPERUSER_PASSWORD:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - trilux_network
+
+  celery_worker:
+    build: .
+    container_name: trilux_celery_worker
+    command: celery -A trilux.celery worker --loglevel=info --concurrency=4
+    volumes:
+      - ./logs:/app/logs
+      # Shared media so the worker can read files uploaded via the web container
+      # (e.g. SCA local-repo .zip uploads).
+      - ./media:/app/media
+      # DooD: worker spawns ephemeral sandboxed tool containers via the host docker.
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Shared work dir, mounted at the SAME path inside spawned tool containers.
+      - recon_work:/recon-work
+      # Bedrock AI summaries run on the worker — mount host AWS config read-only.
+      - ${HOME}/.aws:/root/.aws:ro
+    environment:
+      <<: *django-env
+      RUN_MIGRATIONS: "0"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - trilux_network
+
+  celery_beat:
+    build: .
+    container_name: trilux_celery_beat
+    command: celery -A trilux.celery beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    volumes:
+      - ./logs:/app/logs
+    environment:
+      <<: *django-env
+      RUN_MIGRATIONS: "0"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - trilux_network
+
+  dashboard:
+    build:
+      context: ${DASHBOARD_CONTEXT:-../trilux-dashboard}
+      dockerfile: Dockerfile
+      args:
+        # Baked into the client bundle at build time; must be host-reachable.
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+    container_name: trilux_dashboard
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+    depends_on:
+      - web
+    restart: unless-stopped
+    networks:
+      - trilux_network
+
+  # Build-only image the sandboxed recon scans run in (not a long-running service).
+  # Build it with:  docker compose --profile build build toolbox
+  toolbox:
+    build:
+      context: .
+      dockerfile: Dockerfile.toolbox
+    image: trilux-toolbox:latest
+    profiles: ["build"]
+    command: ["true"]
+
+networks:
+  trilux_network:
+    driver: bridge
+  # Isolated network for spawned scan containers (see recon.runtime.docker).
+  trilux_scan_net:
+    name: trilux_scan_net
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.enable_ip_masquerade: "true"
+
+volumes:
+  postgres_data:
+  recon_work:

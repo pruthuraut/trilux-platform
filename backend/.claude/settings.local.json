@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./venv/bin/python manage.py migrate)",
+      "Bash(./venv/bin/python manage.py test recon -v2)",
+      "Bash(grep -E \"\\\\${.*}/[a-zA-Z0-9\\\\-/]*\")",
+      "Bash(grep -rh \"fetch\\(\\\\`\" /Users/pruthu.raut/Documents/project/trilux-dashboard/app /Users/pruthu.raut/Documents/project/trilux-dashboard/components --include=\"*.ts\" --include=\"*.tsx\")",
+      "Bash(printf 'NEXT_PUBLIC_API_BASE_URL=http://localhost:8000\\\\n')",
+      "Bash(npm --version)",
+      "Bash(curl -s -X POST http://127.0.0.1:8000/auth/signin/ -H \"Content-Type: application/json\" -d '{\"email\":\"admin@trilux.dev\",\"password\":\"admin12345\"}')",
+      "Bash(./venv/bin/python -c ' *)",
+      "Bash(docker compose *)",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(mkdir -p /Users/pruthu.raut/.trilux-recon-work)",
+      "Bash(RECON_EXECUTION_BACKEND=docker RECON_WORK_DIR=/Users/pruthu.raut/.trilux-recon-work ./venv/bin/python -c ' *)",
+      "Bash(./venv/bin/python -m py_compile recon/runtime/docker.py recon/runtime/base.py)",
+      "Bash(./venv/bin/python manage.py check)",
+      "Bash(./venv/bin/python manage.py test recon)"
+    ]
+  }
+}

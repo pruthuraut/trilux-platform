@@ -1,0 +1,13 @@
+# Local port remap: 8000/3000 were taken by other host apps.
+# Backend -> 8001, Dashboard -> 3001. Auto-merged by `docker compose`.
+# `!override` replaces the base port list instead of appending to it.
+services:
+  web:
+    ports: !override
+      - "8001:8000"
+  dashboard:
+    build:
+      args:
+        NEXT_PUBLIC_API_BASE_URL: "http://localhost:8001"
+    ports: !override
+      - "3001:3000"

@@ -1,0 +1,25 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+
+  - name: OpenSearch
+    type: elasticsearch
+    access: proxy
+    url: https://opensearch:9200
+    isDefault: false
+    jsonData:
+      esVersion: '7.10.0'
+      tlsAuthenticationDetails:
+        caCertText: ''
+      tlsSkipVerify: true
+    secureJsonData:
+      basicAuthPassword: Admin@123456
+    basicAuth: true
+    basicAuthUser: admin
+    editable: true

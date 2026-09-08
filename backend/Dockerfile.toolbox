@@ -1,0 +1,50 @@
+# Toolbox image — carries every security CLI the recon pipeline shells out to.
+# Spawned per-invocation by recon.runtime.docker.DockerRunner as an ephemeral,
+# hardened, --rm container. Built and versioned independently of the app image.
+FROM golang:1.24-bookworm AS gobuild
+
+ENV GOBIN=/out
+# GOTOOLCHAIN=auto lets `go install` fetch a newer toolchain if a tool's go.mod
+# requires one (ProjectDiscovery tools bump their minimum Go often).
+ENV GOTOOLCHAIN=auto
+# Each tool installs independently (|| true) so one failing module can't discard
+# the whole image — missing binaries are simply SKIPPED by the recon runtime.
+# gitleaks' module path is github.com/zricethezav/gitleaks/v8 (the gitleaks org
+# hosts it but the module still declares the original path).
+RUN mkdir -p /out \
+    && go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest || true
+RUN go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest || true
+RUN go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest || true
+RUN go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest || true
+RUN go install -v github.com/projectdiscovery/katana/cmd/katana@latest || true
+RUN go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest || true
+RUN go install -v github.com/lc/gau/v2/cmd/gau@latest || true
+RUN go install -v github.com/hahwul/dalfox/v2@latest || true
+RUN go install -v github.com/ffuf/ffuf/v2@latest || true
+RUN go install -v github.com/tomnomnom/gf@latest || true
+RUN go install -v github.com/zricethezav/gitleaks/v8@latest || true
+
+# --- runtime layer ---
+FROM debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    git \
+    sqlmap \
+    libpcap0.8 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=gobuild /out/* /usr/local/bin/
+
+# Bundled nuclei templates + gf patterns baked into the image.
+COPY nuclei-templates-main/ /opt/nuclei-templates/
+RUN git clone --depth 1 https://github.com/1ndianl33t/Gf-Patterns /opt/gf-patterns || true
+
+# Non-root user; the runner also enforces --user, this is defense in depth.
+RUN useradd -m -u 1000 scanner
+USER 1000:1000
+ENV HOME=/home/scanner
+# gf looks for patterns under ~/.gf
+RUN mkdir -p /home/scanner/.gf && cp /opt/gf-patterns/*.json /home/scanner/.gf/ 2>/dev/null || true
+
+# No ENTRYPOINT/CMD: DockerRunner sets --entrypoint <tool> per invocation.

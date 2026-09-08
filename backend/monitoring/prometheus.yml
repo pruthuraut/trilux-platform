@@ -1,0 +1,31 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'trilux'
+
+scrape_configs:
+  # Prometheus self monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Django application metrics (if using django-prometheus)
+  - job_name: 'django'
+    static_configs:
+      - targets: ['trilux_web:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  # Celery worker metrics
+  - job_name: 'celery'
+    static_configs:
+      - targets: ['trilux_celery_worker:9808']
+    scrape_interval: 10s
+
+  # OpenSearch metrics
+  - job_name: 'opensearch'
+    static_configs:
+      - targets: ['trilux_opensearch:9200']
+    scrape_interval: 30s

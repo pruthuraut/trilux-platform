@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Form Confirmation - Obsedian</title>
+    <style>
+        /* Mobile-first responsive styles */
+        @media screen and (max-width: 600px) {
+            .main-container {
+                width: 95% !important;
+                margin: 0 auto !important;
+                border-radius: 8px !important;
+            }
+            .header-cell {
+                padding: 40px 20px 20px !important;
+            }
+            .content-cell {
+                padding: 30px 20px !important;
+            }
+            .section-cell {
+                padding: 0 20px 20px !important;
+            }
+            .footer-cell {
+                padding: 20px !important;
+            }
+            .main-title {
+                font-size: 28px !important;
+            }
+            .section-title {
+                font-size: 18px !important;
+            }
+            .details-table td {
+                display: block !important;
+                width: 100% !important;
+                padding: 4px 0 !important;
+            }
+            .detail-label {
+                margin-bottom: 2px !important;
+            }
+            .detail-value {
+                margin-bottom: 12px !important;
+                padding-left: 10px !important;
+            }
+        }
+        
+        @media screen and (max-width: 480px) {
+            .main-container {
+                width: 98% !important;
+                border-radius: 4px !important;
+            }
+            .header-cell {
+                padding: 30px 15px 15px !important;
+            }
+            .content-cell {
+                padding: 20px 15px !important;
+            }
+            .section-cell {
+                padding: 0 15px 15px !important;
+            }
+            .main-title {
+                font-size: 24px !important;
+            }
+            .cyber-overlay {
+                background-size: 15px 15px !important;
+            }
+            .footer-links a {
+                display: block !important;
+                margin: 5px 0 !important;
+            }
+        }
+    </style>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Arial', sans-serif; background-color: #0a0a0a; color: #e0e0e0;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td align="center" style="padding: 40px 10px;">
+                <table role="presentation" class="main-container" style="width: 600px; max-width: 100%; border-collapse: collapse; background-color: #1a1a1a; border-radius: 16px; overflow: hidden; box-shadow: 0 0 30px rgba(0, 255, 0, 0.2);">
+                    
+                    <!-- Header with Animated Background -->
+                    <tr>
+                        <td class="header-cell" style="padding: 60px 30px; text-align: center; background-color: #000000; background-image: url('https://via.placeholder.com/600x300/000000/000000?text='); background-size: cover; position: relative; overflow: hidden;">
+                            <!-- Overlay with animated cyber effect -->
+                            <div class="cyber-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(45deg, rgba(0,255,0,0.1) 25%, transparent 25%, transparent 50%, rgba(0,255,0,0.1) 50%, rgba(0,255,0,0.1) 75%, transparent 75%, transparent); background-size: 20px 20px; animation: slide 20s linear infinite;"></div>
+                            <h1 class="main-title" style="position: relative; margin: 0; font-size: 36px; color: #00ff00; text-shadow: 0 0 15px rgba(0, 255, 0, 0.7);">Obsedian</h1>
+                            <p style="position: relative; margin: 10px 0 0; font-size: 18px; color: #ffffff;">Message Received</p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Welcome Message -->
+                    <tr>
+                        <td class="content-cell" style="padding: 40px 30px; text-align: center;">
+                            <h2 class="section-title" style="color: #00ff00; margin-bottom: 20px; border-bottom: 2px solid #00ff00; padding-bottom: 10px; display: inline-block;">Thank you for contacting us!</h2>
+                            <p style="margin-bottom: 20px; font-size: 16px; line-height: 1.5;">Hi {{ name }}, we have successfully received your message and want to thank you for reaching out to us. Our team will review your inquiry and get back to you as soon as possible.</p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Message Details -->
+                    <tr>
+                        <td class="section-cell" style="padding: 0 30px 30px;">
+                            <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #2a2a2a; border-radius: 8px; overflow: hidden;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <h3 class="section-title" style="color: #00ff00; margin-top: 0;">Your Message Details</h3>
+                                        <table class="details-table" style="width: 100%; border-collapse: collapse;">
+                                            <tr>
+                                                <td class="detail-label" style="padding: 8px 0; font-weight: bold; color: #ffffff; width: 140px;">Name:</td>
+                                                <td class="detail-value" style="padding: 8px 0; color: #e0e0e0;">{{ name }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="detail-label" style="padding: 8px 0; font-weight: bold; color: #ffffff;">Email:</td>
+                                                <td class="detail-value" style="padding: 8px 0; color: #e0e0e0;">{{ email }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="detail-label" style="padding: 8px 0; font-weight: bold; color: #ffffff;">Phone Number:</td>
+                                                <td class="detail-value" style="padding: 8px 0; color: #e0e0e0;">{{ phone_number }}</td>
+                                            </tr>
+                                            {% if organization_name %}
+                                            <tr>
+                                                <td class="detail-label" style="padding: 8px 0; font-weight: bold; color: #ffffff;">Organization:</td>
+                                                <td class="detail-value" style="padding: 8px 0; color: #e0e0e0;">{{ organization_name }}</td>
+                                            </tr>
+                                            {% endif %}
+                                            <tr>
+                                                <td class="detail-label" style="padding: 8px 0; font-weight: bold; color: #ffffff; vertical-align: top;">Message:</td>
+                                                <td class="detail-value" style="padding: 8px 0; color: #e0e0e0;">{{ message }}</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                            
+                    <!-- Response Time & Next Steps -->
+                    <tr>
+                        <td class="section-cell" style="padding: 0 30px 30px;">
+                            <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #2a2a2a; border-radius: 8px; overflow: hidden;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <h3 class="section-title" style="color: #00ff00; margin-top: 0;">What happens next?</h3>
+                                        <ul style="padding-left: 20px; margin-bottom: 20px; color: #e0e0e0;">
+                                            <li style="margin-bottom: 10px;">Our team will review your message</li>
+                                            <li style="margin-bottom: 10px;">We'll prepare a personalized response</li>
+                                            <li style="margin-bottom: 10px;">You'll receive our reply via email within 24-48 hours</li>
+                                            <li>For urgent matters, contact us directly</li>
+                                        </ul>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td class="footer-cell" style="padding: 30px; text-align: center; font-size: 12px; background-color: #000000;">
+                            <p style="margin: 0; margin-bottom: 10px;">© 2024 Obsedian. All rights reserved.</p>
+                            <p class="footer-links" style="margin: 0;">
+                                <a href="#" style="color: #00ff00; margin-right: 10px; text-decoration: none;">Contact Support</a>
+                                <a href="#" style="color: #00ff00; margin-right: 10px; text-decoration: none;">Privacy Policy</a>
+                                <a href="#" style="color: #00ff00; text-decoration: none;">Terms of Service</a>
+                            </p>
+                        </td>
+                    </tr>
+                    
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

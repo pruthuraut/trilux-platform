@@ -1,0 +1,313 @@
+[
+  {
+    "vulnerabilities": [
+      {
+        "id": "A03:2021-Injection-XSS-001",
+        "vulnerability_type": ["A03:2021-Injection", "Cross-Site Scripting (XSS)"],
+        "title": "XSS via dangerouslySetInnerHTML with Unsanitized User Input",
+        "severity": "High",
+        "location": {
+          "filePath": "src/components/ui/multi-category-selector.tsx",
+          "lineNumber": 24
+        },
+        "description": "The component uses `dangerouslySetInnerHTML` to render content. If any user-controlled data flows into this component without sanitization, an attacker can inject arbitrary JavaScript that executes in other users' browsers, enabling session hijacking, credential theft, or defacement.",
+        "fix": "Remove `dangerouslySetInnerHTML` entirely and use React's built-in JSX rendering. If HTML rendering is absolutely required, sanitize input using DOMPurify before passing it: `dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }}`.",
+        "tips": [
+          "Audit all call sites of this component to trace whether user-controlled data reaches the dangerouslySetInnerHTML prop.",
+          "Install DOMPurify: `npm install dompurify @types/dompurify`."
+        ]
+      }
+    ],
+    "message": "Stored/Reflected XSS vulnerability via dangerouslySetInnerHTML",
+    "timestamp": "2026-02-12",
+    "location": {
+      "file_path": "src/components/ui/multi-category-selector.tsx",
+      "line": "24"
+    }
+  },
+  {
+    "vulnerabilities": [
+      {
+        "id": "A07:2021-Auth-Bypass-001",
+        "vulnerability_type": ["A07:2021-Identification and Authentication Failures"],
+        "title": "Waitlist Authentication Bypass - Missing Redirect on Disabled Waitlist",
+        "severity": "High",
+        "location": {
+          "filePath": "src/app/(auth)/waitlist/devices/page.tsx",
+          "lineNumber": 5
+        },
+        "description": "The device page checks `checkWaitlistEnabled()` but when the waitlist is disabled, the page may still render content or fail to redirect the user properly. An attacker can directly navigate to `/waitlist/devices` and bypass the intended access control, gaining access to device registration or enumeration functionality that should be gated.",
+        "fix": "Ensure that when `waitlistEnabled` is false, the function immediately calls `redirect('/sign-in')` or `redirect('/')` and returns `null` to prevent any page content from rendering.",
+        "tips": [
+          "Apply the same pattern to all waitlist-gated routes.",
+          "Use Next.js middleware for centralized auth gating instead of per-page checks."
+        ]
+      }
+    ],
+    "message": "Authentication bypass via direct URL navigation",
+    "timestamp": "2026-02-12",
+    "location": {
+      "file_path": "src/app/(auth)/waitlist/devices/page.tsx",
+      "line": "5"
+    }
+  },
+  {
+    "vulnerabilities": [
+      {
+        "id": "A07:2021-Auth-Bypass-002",
+        "vulnerability_type": ["A07:2021-Identification and Authentication Failures"],
+        "title": "Waitlist Page Authentication Bypass",
+        "severity": "High",
+        "location": {
+          "filePath": "src/app/(auth)/waitlist/page.tsx",
+          "lineNumber": 1
+        },
+        "description": "Same pattern as the devices page — the main waitlist page may not properly enforce access control when the waitlist feature is toggled off, allowing unauthenticated users to access waitlist functionality by directly navigating to `/waitlist`.",
+        "fix": "Add a server-side guard that immediately redirects unauthenticated or unauthorized users before rendering any page content.",
+        "tips": [
+          "Centralize authentication checks in Next.js middleware (`middleware.ts`) to protect all routes under `/(auth)/`."
+        ]
+      }
+    ],
+    "message": "Authentication bypass on waitlist page",
+    "timestamp": "2026-02-12",
+    "location": {
+      "file_path": "src/app/(auth)/waitlist/page.tsx",
+      "line": "1"
+    }
+  },
+  {
+    "vulnerabilities": [
+      {
+        "id": "A01:2021-Broken-Access-Control-001",
+        "vulnerability_type": ["A01:2021-Broken Access Control"],
+        "title": "Missing Server-Side Authorization on API Routes / Server Actions",
+        "severity": "High",
+        "location": {
+          "filePath": "src/app/(auth)/",
+          "lineNumber": 0
+        },
+        "description": "The application uses a layout-based auth pattern under `(auth)/` route group. However, Next.js layouts do NOT prevent direct access to API routes or server actions nested within these route groups. An attacker can craft direct POST/GET requests to server actions or API endpoints, bypassing the layout-level auth check entirely. Layout-based protection is UI-only and not a security boundary.",
+        "fix": "Every Server Action and API route handler must independently verify the user's session/authentication using `auth()` or equivalent, and reject unauthorized requests with a 401/403 response. Never rely solely on layout-level checks.",
+        "tips": [
+          "Audit every `action.ts`, `route.ts`, and any function marked with `'use server'` to ensure they validate authentication independently.",
+          "Use Next.js middleware to enforce auth at the request level."
+        ]
+      }
+    ],
+    "message": "Server actions and API routes may lack independent auth verification",
+    "timestamp": "2026-02-12",
+    "location": {
+      "file_path": "src/app/(auth)/",
+      "line": "0"
+    }
+  },
+  {
+    "vulnerabilities": [
+      {
+        "id": "A05:2021-CSRF-001",
+        "vulnerability_type": ["A05:2021-Security Misconfiguration", "Cross-Site Request Forgery"],
+        "title": "Missing CSRF Protection on State-Changing Server Actions",
+        "severity": "High",
+        "location": {
+          "filePath": "src/app/",
+          "lineNumber": 0
+        },
+        "description": "Next.js Server Actions are invoked via POST requests but do not have built-in CSRF token validation (prior to Next.js 14.x with `serverActions.allowedOrigins`). If the application does not configure `allowedOrigins` or implement custom CSRF tokens, an attacker can host a malicious page that triggers server actions on behalf of an authenticated user (e.g., transferring coins, changing settings).",
+        "fix": "In `next.config.ts`, configure `experimental.serverActions.allowedOrigins` to restrict which origins can invoke server actions. Alternatively, implement custom CSRF token validation in critical server actions.",
+        "tips": [
+          "For financial operations (coin transfers, purchases), add an additional confirmation step or CSRF token.",
+          "Set `SameSite=Strict` or `SameSite=Lax` on session cookies."
+        ]
+      }
+    ],
+    "message": "CSRF protection missing on server actions",
+    "timestamp": "2026-02-12",
+    "location": {
+      "file_path": "src/app/",
+      "line": "0"
+    }
+  },
+  {
+    "vulnerabilities": [
+      {
+        "id": "A05:2021-Security-Headers-001",
+        "vulnerability_type": ["A05:2021-Security Misconfiguration"],
+        "title": "Missing Security Headers in Next.js Configuration",
+        "severity": "Medium",
+        "location": {
+          "filePath": "next.config.ts",
+          "lineNumber": 1
+        },
+        "description": "The `next.config.ts` does not configure security headers such as `Content-Security-Policy`, `X-Content-Type-Options`, `X-Frame-Options`, `Strict-Transport-Security`, `Referrer-Policy`, or `Permissions-Policy`. Without these headers, the deployed application is vulnerable to clickjacking (iframe embedding), MIME-sniffing attacks, and has a weaker defense-in-depth posture against XSS.",
+        "fix": "Add a `headers()` function in `next.config.ts` to return security headers for all routes:\n```js\nasync headers() {\n  return [{\n    source: '/(.*)',\n    headers: [\n      { key: 'X-Frame-Options', value: 'DENY' },\n      { key: 'X-Content-Type-Options', value: 'nosniff' },\n      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },\n      { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },\n      { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },\n      { key: 'Content-Security-Policy', value: \"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';\" }\n    ]\n  }]\n}\n```",
+        "tips": [
+          "Use https://securityheaders.com to test your deployed application's headers.",
+          "Tailor the CSP to your actual resource origins (e.g., if you load images from external CDNs)."
+        ]
+      }
+    ],
+    "message": "Security headers not configured",
+    "timestamp": "2026-02-12",
+    "location": {
+      "file_path": "next.config.ts",
+      "line": "1"
+    }
+  },
+  {
+    "vulnerabilities": [
+      {
+        "id": "A02:2021-Env-Exposure-001",
+        "vulnerability_type": ["A02:2021-Cryptographic Failures", "A05:2021-Security Misconfiguration"],
+        "title": "Potential Client-Side Exposure of Secrets via NEXT_PUBLIC_ Environment Variables",
+        "severity": "High",
+        "location": {
+          "filePath": "src/env.ts",
+          "lineNumber": 1
+        },
+        "description": "The `env.ts` file defines environment variable schemas. Any variable prefixed with `NEXT_PUBLIC_` is bundled into the client-side JavaScript and visible to any user inspecting the page source or network traffic. If sensitive keys (API secrets, database URLs, admin tokens) are accidentally prefixed with `NEXT_PUBLIC_`, they become publicly exposed. An attacker can extract these from the built JS bundles.",
+        "fix": "Audit `env.ts` and `.env*` files to ensure NO secret values use the `NEXT_PUBLIC_` prefix. Only truly public configuration (e.g., public API base URLs, app name) should use this prefix. Server-only secrets must be accessed only in server components, server actions, or API routes.",
+        "tips": [
+          "Use the `server` and `client` separation in your env schema (e.g., with `@t3-oss/env-nextjs`) to enforce this at build time.",
+          "Run `grep -r 'NEXT_PUBLIC_' .env*` to audit all public env vars."
+        ]
+      }
+    ],
+    "message": "Potential secret exposure through NEXT_PUBLIC_ environment variables",
+    "timestamp": "2026-02-12",
+    "location": {
+      "file_path": "src/env.ts",
+      "line": "1"
+    }
+  },
+  {
+    "vulnerabilities": [
+      {
+        "id": "A01:2021-IDOR-001",
+        "vulnerability_type": ["A01:2021-Broken Access Control"],
+        "title": "Potential IDOR in User/Resource-Specific Routes",
+        "severity": "High",
+        "location": {
+          "filePath": "src/app/(auth)/",
+          "lineNumber": 0
+        },
+        "description": "If any authenticated routes accept user IDs, wallet IDs, or resource identifiers as URL parameters or request body fields, an attacker can modify these values to access or modify other users' data (Insecure Direct Object Reference). In a cryptocurrency/coin application like VidCoin, this could allow an attacker to view other users' balances, transfer their coins, or manipulate their accounts.",
+        "fix": "Never trust client-supplied IDs for authorization. Always derive the current user's identity from the server-side session (e.g., `auth().userId`). When accessing resources, verify that the resource belongs to the authenticated user before performing any operation.",
+        "tips": [
+          "Use parameterized queries and always include `WHERE user_id = <session_user_id>` in database queries.",
+          "Implement authorization middleware that maps session identity to resource ownership."
+        ]
+      }
+    ],
+    "message": "Potential Insecure Direct Object Reference in authenticated routes",
+    "timestamp": "2026-02-12",
+    "location": {
+      "file_path": "src/app/(auth)/",
+      "line": "0"
+    }
+  },
+  {
+    "vulnerabilities": [
+      {
+        "id": "A04:2021-Rate-Limiting-001",
+        "vulnerability_type": ["A04:2021-Insecure Design"],
+        "title": "No Rate Limiting on Authentication and Financial Endpoints",
+        "severity": "High",
+        "location": {
+          "filePath": "src/app/(auth)/sign-in/",
+          "lineNumber": 0
+        },
+        "description": "The application does not appear to implement rate limiting on sign-in, sign-up, waitlist registration, or any coin transaction endpoints. An attacker can perform brute-force attacks on authentication, credential stuffing, or spam the waitlist/transaction system with automated requests.",
+        "fix": "Implement rate limiting using middleware. Options include: (1) Next.js middleware with `@upstash/ratelimit`, (2) Cloudflare Rate Limiting if deployed on Cloudflare, (3) Custom middleware using a Redis-backed token bucket or sliding window algorithm.",
+        "tips": [
+          "Apply strict rate limits to `/sign-in`, `/sign-up`, and any server action that modifies financial state.",
+          "Return `429 Too Many Requests` with a `Retry-After` header when limits are exceeded.",
+          "Consider implementing account lockout after N failed login attempts."
+        ]
+      }
+    ],
+    "message": "No rate limiting on critical endpoints",
+    "timestamp": "2026-02-12",
+    "location": {
+      "file_path": "src/app/(auth)/sign-in/",
+      "line": "0"
+    }
+  },
+  {
+    "vulnerabilities": [
+      {
+        "id": "A01:2021-Clickjacking-001",
+        "vulnerability_type": ["A01:2021-Broken Access Control"],
+        "title": "Clickjacking - Application Can Be Embedded in Malicious Iframes",
+        "severity": "Medium",
+        "location": {
+          "filePath": "next.config.ts",
+          "lineNumber": 1
+        },
+        "description": "Without `X-Frame-Options: DENY` or `Content-Security-Policy: frame-ancestors 'none'` headers, an attacker can embed the deployed VidCoin application inside an iframe on a malicious website. They can then overlay invisible UI elements to trick authenticated users into clicking buttons that trigger unintended actions (e.g., coin transfers, account changes).",
+        "fix": "Add `X-Frame-Options: DENY` and `Content-Security-Policy: frame-ancestors 'none'` to the response headers in `next.config.ts`.",
+        "tips": [
+          "This is especially critical for a financial application dealing with virtual currency."
+        ]
+      }
+    ],
+    "message": "Clickjacking vulnerability due to missing frame protection",
+    "timestamp": "2026-02-12",
+    "location": {
+      "file_path": "next.config.ts",
+      "line": "1"
+    }
+  },
+  {
+    "vulnerabilities": [
+      {
+        "id": "A09:2021-Logging-001",
+        "vulnerability_type": ["A09:2021-Security Logging and Monitoring Failures"],
+        "title": "No Security Logging or Monitoring for Authentication and Financial Events",
+        "severity": "Medium",
+        "location": {
+          "filePath": "src/app/",
+          "lineNumber": 0
+        },
+        "description": "The application does not appear to implement security event logging for failed authentication attempts, unauthorized access attempts, or financial transactions. Without logging, an attacker can perform reconnaissance, brute-force, or data exfiltration without detection. Post-incident forensics would also be impossible.",
+        "fix": "Implement structured security logging for: (1) Failed login attempts with IP and user-agent, (2) Authorization failures (403s), (3) All financial transactions (coin transfers, balance changes), (4) Admin actions. Send logs to a centralized logging service (e.g., Axiom, Datadog, or Sentry).",
+        "tips": [
+          "Set up alerts for anomalous patterns like multiple failed logins from the same IP.",
+          "Never log sensitive data like passwords or full tokens in log entries."
+        ]
+      }
+    ],
+    "message": "Security logging and monitoring not implemented",
+    "timestamp": "2026-02-12",
+    "location": {
+      "file_path": "src/app/",
+      "line": "0"
+    }
+  },
+  {
+    "vulnerabilities": [
+      {
+        "id": "A05:2021-Error-Exposure-001",
+        "vulnerability_type": ["A05:2021-Security Misconfiguration"],
+        "title": "Potential Verbose Error Messages Exposing Internal Details",
+        "severity": "Medium",
+        "location": {
+          "filePath": "src/app/",
+          "lineNumber": 0
+        },
+        "description": "If custom error pages (`error.tsx`, `not-found.tsx`) or server actions return detailed error messages including stack traces, database query details, or internal paths in production, an attacker can use this information for further exploitation — identifying the ORM in use, database structure, internal file paths, or third-party service configurations.",
+        "fix": "Ensure all error boundaries and server actions return generic error messages in production. Use `error.tsx` pages that display user-friendly messages without technical details. Set `NODE_ENV=production` in deployment to suppress Next.js development error overlays.",
+        "tips": [
+          "Create a custom `src/app/error.tsx` and `src/app/not-found.tsx` with generic messages.",
+          "Log detailed errors server-side only, never expose them to the client."
+        ]
+      }
+    ],
+    "message": "Potential information disclosure through error messages",
+    "timestamp": "2026-02-12",
+    "location": {
+      "file_path": "src/app/",
+      "line": "0"
+    }
+  }
+]
