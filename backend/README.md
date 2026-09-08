@@ -60,11 +60,10 @@ are persisted to the DB, artifacts uploaded to R2, and an AI layer summarizes th
 
 ## Quick start — one command
 
-From the **backend repo**, with the dashboard cloned as a sibling at
-`../trilux-dashboard`, bring up the whole platform:
+From the repository root, bring up the whole platform:
 
 ```bash
-docker compose up --build
+docker compose -f backend/docker-compose.yml up --build
 ```
 
 This starts the unified stack: **postgres**, **redis**, **web** (Django/Gunicorn),
@@ -78,7 +77,7 @@ This starts the unified stack: **postgres**, **redis**, **web** (Django/Gunicorn
 
 Notes:
 
-- The dashboard build context defaults to `../trilux-dashboard`. Override with the
+- The dashboard build context defaults to `../frontend`. Override with the
   `DASHBOARD_CONTEXT` env var if it lives elsewhere.
 - The web service auto-runs `collectstatic` + `migrate` on boot (`RUN_MIGRATIONS=1`).
 - **Auto-create an admin**: set `DJANGO_SUPERUSER_EMAIL` and `DJANGO_SUPERUSER_PASSWORD`
@@ -268,6 +267,6 @@ Config is read from a `.env` file (see `sample.env`) via both `python-decouple` 
 
 ## Frontend
 
-The UI is a separate Next.js app at `../trilux-dashboard`. In the unified Docker stack
+The UI is a separate Next.js app at `../frontend`. In the unified Docker stack
 it is built and served automatically at http://localhost:3000. See that repo's README to
 run it standalone.

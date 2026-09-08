@@ -194,11 +194,11 @@ canary), API8 misconfig (headers/CORS/caching/verbose errors), API9 improper inv
 ## Frontend dashboard (separate repo)
 
 The UI is a **Next.js 14 + TypeScript + Tailwind + Radix** app at
-`../trilux-dashboard` (cloned from github.com/pruthuraut/trilux-dashboard). It is a
+`../frontend` in the unified repository. It is a
 pure API client — talks to this backend via `NEXT_PUBLIC_API_BASE_URL` (default
 `http://localhost:8000`), JWT in `Authorization: Bearer`, token stored by
 `utils/tokenManager.ts`, pages wrapped in `utils/withAuth.tsx`.
-- Run: `cd ../trilux-dashboard && npm install && npm run dev` → http://localhost:3000.
+- Run: `cd ../frontend && npm install && npm run dev` → http://localhost:3000.
 - It only calls `/auth/` and `/api/` (the pre-existing apps) — those were untouched.
 - **Recon UI added** to match the new `/recon/` backend: `app/recon/page.tsx` (runs
   list + start dialog `components/NewReconScanDialog.tsx` + an **"API Scan" button →
@@ -245,9 +245,9 @@ pure API client — talks to this backend via `NEXT_PUBLIC_API_BASE_URL` (defaul
 ## Running
 
 **One command (whole stack — recommended):** with the dashboard cloned as a sibling
-(`../trilux-dashboard`), from the backend repo:
+(`../frontend`), from the repository root:
 ```bash
-docker compose up --build
+docker compose -f backend/docker-compose.yml up --build
 # Dashboard UI : http://localhost:3000
 # Backend API  : http://localhost:8000  (admin at /admin/)
 ```
@@ -259,7 +259,7 @@ image once with `docker compose --profile build build toolbox` (needed when
 
 Compose details: shared Django env via the `x-django-env` YAML anchor; only `web` runs
 migrations (`RUN_MIGRATIONS=1`); worker/beat set `RUN_MIGRATIONS=0` to avoid racing.
-Dashboard build context is `../trilux-dashboard` (override with `DASHBOARD_CONTEXT`);
+Dashboard build context is `../frontend` (override with `DASHBOARD_CONTEXT`);
 `NEXT_PUBLIC_API_BASE_URL` is baked in at build time (default `http://localhost:8000`).
 The dashboard uses Next.js **standalone output** (`output: 'standalone'` in
 `next.config.mjs`), so its runtime image ships only the traced server bundle + `node server.js`.

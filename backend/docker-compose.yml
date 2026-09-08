@@ -10,7 +10,7 @@
 #   - Dashboard UI : http://localhost:3000
 #   - Backend API  : http://localhost:8000   (admin at /admin/)
 #
-# The dashboard build context points at the sibling repo (../trilux-dashboard).
+# The dashboard build context points at the frontend directory (../frontend).
 # Override with DASHBOARD_CONTEXT if it lives elsewhere.
 
 x-django-env: &django-env
@@ -164,7 +164,7 @@ services:
 
   dashboard:
     build:
-      context: ${DASHBOARD_CONTEXT:-../trilux-dashboard}
+      context: ${DASHBOARD_CONTEXT:-../frontend}
       dockerfile: Dockerfile
       args:
         # Baked into the client bundle at build time; must be host-reachable.

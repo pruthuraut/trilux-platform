@@ -5,18 +5,17 @@ The web UI for the **Obsedian Guard / Trilux** security-scanning platform. A
 Trilux Django backend over its REST API. It is a pure API client: it holds no database
 of its own and authenticates with JWT.
 
-The backend lives in the sibling repo (`../trilux`).
+The backend lives in the sibling directory (`../backend`).
 
 ---
 
 ## Run with the unified stack (recommended)
 
-The easiest way to run the whole platform is from the **backend repo**. With this
-dashboard cloned as a sibling at `../trilux-dashboard`, run:
+The easiest way to run the whole platform is from the repository root. Run:
 
 ```bash
-cd ../trilux
-docker compose up --build
+cd ..
+docker compose -f backend/docker-compose.yml up --build
 ```
 
 That builds and serves this dashboard automatically at **http://localhost:3000**,

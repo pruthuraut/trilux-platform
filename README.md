@@ -42,4 +42,4 @@ Review `frontend/sample.env` and point `NEXT_PUBLIC_API_BASE_URL` at the running
 
 ## Production notes
 
-Use the Docker and Compose files in `backend/` for the supported container workflow. Configure secrets through the deployment environment, not source control.
+From the repository root, start the full stack with `docker compose -f backend/docker-compose.yml up --build`. Configure secrets through the deployment environment, not source control.
